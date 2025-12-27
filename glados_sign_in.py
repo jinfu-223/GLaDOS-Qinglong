@@ -1,6 +1,12 @@
 import requests,json,os
 import datetime
 import pandas as pd
+import time
+
+# 请求超时时间（秒）
+REQUEST_TIMEOUT = 15
+# 最大重试次数
+MAX_RETRIES = 3
 
 # pushplus秘钥
 sckey = os.environ.get("PUSHPLUS_TOKEN", "")
@@ -10,6 +16,12 @@ cookies= os.environ.get("GLADOS_COOKIE", []).split("&")
 
 # webhook编码
 webhook_code = os.environ.get("WEBHOOK_CODE", "")
+
+# 测试格式
+# sckey = ""
+# webhook_code = ""
+# cookie_str = ""
+# cookies = cookie_str.split("&")
 
 if cookies[0] == "":
     print('未获取到COOKIE变量') 
@@ -45,22 +57,45 @@ def start():
     sendContent = ""
 
 
-    url= "https://glados.rocks/api/user/checkin"
-    url2= "https://glados.rocks/api/user/status"
-    referer = 'https://glados.rocks/console/checkin'
-    origin = "https://glados.rocks"
+    url= "https://glados.network/api/user/checkin"
+    url2= "https://glados.network/api/user/status"
+    referer = 'https://glados.network/console/checkin'
+    origin = "https://glados.network"
     useragent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36"
     payload={
         'token': 'glados.one'
     }
     for cookie in cookies:
-        checkin = requests.post(url, headers={
-        'cookie': cookie,
-        'referer': referer,
-        'origin': origin,
-        'user-agent': useragent,
-        'content-type': 'application/json;charset=UTF-8'
-        }, data=json.dumps(payload))
+        # 签到请求，带重试机制
+        checkin = None
+        for attempt in range(MAX_RETRIES):
+            try:
+                print(f"尝试签到 (第 {attempt + 1}/{MAX_RETRIES} 次)...")
+                checkin = requests.post(url, headers={
+                'cookie': cookie,
+                'referer': referer,
+                'origin': origin,
+                'user-agent': useragent,
+                'content-type': 'application/json;charset=UTF-8'
+                }, data=json.dumps(payload), timeout=REQUEST_TIMEOUT)
+                print(f"签到请求成功，状态码: {checkin.status_code}")
+                break  # 请求成功，跳出重试循环
+            except requests.exceptions.Timeout:
+                print(f"签到请求超时 (第 {attempt + 1} 次)")
+                if attempt < MAX_RETRIES - 1:
+                    print(f"等待 3 秒后重试...")
+                    time.sleep(3)
+            except requests.exceptions.RequestException as e:
+                print(f"签到请求异常: {e}")
+                if attempt < MAX_RETRIES - 1:
+                    print(f"等待 3 秒后重试...")
+                    time.sleep(3)
+        
+        if checkin is None:
+            message_content = "签到请求失败，所有重试均超时"
+            fail += 1
+            sendContent += f"签到状态: {message_content}\n\n"
+            continue
 
         if checkin.status_code == 502:
             message_content = "签到请求失败，服务器返回502 Bad Gateway"
@@ -68,12 +103,20 @@ def start():
             sendContent += f"签到状态: {message_content}\n\n"
             continue
 
-        state_response = requests.get(url2, headers={
-            'cookie': cookie,
-            'referer': referer,
-            'origin': origin,
-            'user-agent': useragent
-        })
+        # 获取用户状态，也添加超时
+        try:
+            state_response = requests.get(url2, headers={
+                'cookie': cookie,
+                'referer': referer,
+                'origin': origin,
+                'user-agent': useragent
+            }, timeout=REQUEST_TIMEOUT)
+        except requests.exceptions.RequestException as e:
+            print(f"获取用户状态请求失败: {e}")
+            message_content = f"获取用户状态失败: {e}"
+            fail += 1
+            sendContent += f"签到状态: {message_content}\n\n"
+            continue
 
         if state_response.status_code != 200 or state_response.json().get('code', -1) == -1:
             message_content = "获取用户状态失败，可能是无效的cookie或服务器错误"
