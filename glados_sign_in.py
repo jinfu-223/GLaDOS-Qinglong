@@ -2,11 +2,14 @@ import requests,json,os
 import datetime
 import pandas as pd
 import time
+from dotenv import load_dotenv
+load_dotenv()
 
 # 请求超时时间（秒）
 REQUEST_TIMEOUT = 15
 # 最大重试次数
 MAX_RETRIES = 3
+
 
 # pushplus秘钥
 sckey = os.environ.get("PUSHPLUS_TOKEN", "")
@@ -57,10 +60,10 @@ def start():
     sendContent = ""
 
 
-    url= "https://glados.network/api/user/checkin"
-    url2= "https://glados.network/api/user/status"
-    referer = 'https://glados.network/console/checkin'
-    origin = "https://glados.network"
+    url= "https://glados.space/api/user/checkin"
+    url2= "https://glados.space/api/user/status"
+    referer = 'https://glados.space/console/checkin'
+    origin = "https://glados.space"
     useragent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36"
     payload={
         'token': 'glados.one'
@@ -118,13 +121,19 @@ def start():
             sendContent += f"签到状态: {message_content}\n\n"
             continue
 
-        if state_response.status_code != 200 or state_response.json().get('code', -1) == -1:
-            message_content = "获取用户状态失败，可能是无效的cookie或服务器错误"
+        state = state_response.json()
+        
+        # 检查返回状态：code=0 表示成功，其他值表示失败
+        if state_response.status_code != 200 or state.get('code', -1) != 0:
+            error_msg = state.get('message', '未知错误')
+            error_code = state.get('code', '未知')
+            message_content = f"获取用户状态失败 [code={error_code}]: {error_msg}"
+            print(f"⚠️ Cookie 可能无效或已过期: {message_content}")
+            print(f"   请重新获取 Cookie 并更新 .env 文件")
             fail += 1
             sendContent += f"签到状态: {message_content}\n\n"
             continue
     #--------------------------------------------------------------------------------------------------------#  
-        state = state_response.json()
         leftdays = str(state['data']['leftDays']).split('.')[0]
         email = state['data']['email']
         vip_days = state['data']['vip']
