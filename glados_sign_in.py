@@ -244,19 +244,24 @@ def start():
         
         url = 'http://www.pushplus.plus/send'
         data = {
-            "token":sckey,
-            "title":title,
-            "content":sendContent,
-            "channel":"webhook",
-            "webhook": webhook_code,  # 设置自己的webhook编码
+            "token": sckey,
+            "title": title,
+            "content": sendContent,
         }
         
-        body=json.dumps(data).encode(encoding='utf-8')
-        headers = {'Content-Type':'application/json'}
-        requests.post(url,data=body,headers=headers)
+        # 只有配置了 webhook 编码时才使用 webhook 渠道，否则使用默认渠道（微信公众号）
+        if webhook_code != "":
+            data["channel"] = "webhook"
+            data["webhook"] = webhook_code
+        
+        body = json.dumps(data).encode(encoding='utf-8')
+        headers = {'Content-Type': 'application/json'}
+        response = requests.post(url, data=body, headers=headers)
+        print(f"推送结果: {response.text}")
 
 def main_handler(event, context):
   return start()
 
 if __name__ == '__main__':
     start()
+        

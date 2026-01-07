@@ -7,6 +7,7 @@
 - ✨ **重试机制**: 新增请求超时（15秒）和自动重试（最多3次）功能
 - ✨ **本地测试支持**: 支持 `.env` 文件配置环境变量（需安装 `python-dotenv`）
 - ✨ **错误处理优化**: 改进 Cookie 无效时的错误提示信息
+- 🐛 **修复 pushplus 推送**: 兼容无 webhook 配置的情况，未配置 webhook 时自动使用微信公众号推送
 
 ## 依赖安装
 
@@ -32,9 +33,11 @@ pip install requests pandas python-dotenv
 
 ## pushplus 设置流程
 
-1. 注册 pushplus 获取自己的 token
-2. 配置 webhook 渠道，如钉钉机器人等，参考 https://www.pushplus.plus/doc/extend/webhook.html
-3. 配置好钉钉机器人后设置 webhook 编码
+> 💡 **说明**：如果不配置 `WEBHOOK_CODE`，将使用默认的微信公众号推送方式。
+
+1. 注册 [pushplus](https://www.pushplus.plus/) 获取自己的 token
+2. （可选）如需使用 webhook 渠道（如钉钉机器人），参考 https://www.pushplus.plus/doc/extend/webhook.html
+3. （可选）配置好钉钉机器人后设置 `WEBHOOK_CODE` 环境变量
 
 ## 效果展示
 
