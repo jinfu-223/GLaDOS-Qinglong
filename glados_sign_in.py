@@ -140,39 +140,59 @@ def start():
         
         if checkin.status_code == 200:
             checkin_result = checkin.json()
-            message_status = checkin_result['message']
+            message_status = checkin_result.get('message', '未知状态')
             
             # 本次执行获取的点数
-            points = checkin_result['points']
-            
+            points = checkin_result.get('points', 0)
             
             # 获取签到记录
-            df_checkin = pd.DataFrame(checkin_result['list'])
-            df_checkin['change'] = df_checkin['change'].astype('float')
-            df_checkin['checkin_date'] = df_checkin['time'].apply( lambda x: datetime.datetime.fromtimestamp(x/1000).date())
-            df_checkin['checkin_time'] = df_checkin['time'].apply( lambda x: datetime.datetime.fromtimestamp(x/1000).strftime('%Y-%m-%d %H:%M:%S'))
+            checkin_list = checkin_result.get('list', [])
             
-            # df_checkin = df_checkin.sort_values('checkin_date', ascending=False)
-            
-            
-            # 过滤出积分增加和签到记录，排除积分扣除记录
-            valid_checkin = df_checkin[df_checkin['change'] >= 0]
-            deduct_record = df_checkin[df_checkin['change'] < 0]
-            
-            # 本日积分变动
-            change = df_checkin['change'][0]
-            
-            # 当前剩余积分
-            balance = int(float(df_checkin['balance'][0]))
-            
-            # 执行签到的时间
-            checkin_time = df_checkin['checkin_time'][0]
-            
-            # 最近签到日期
-            checkin_date = df_checkin['checkin_date'][0]
-            
-            # 计算连续天数
-            consecutive_days = calculate_consecutive_days(valid_checkin)
+            # 检查签到记录是否为空或格式不完整
+            if not checkin_list or not isinstance(checkin_list, list) or len(checkin_list) == 0:
+                print(f"⚠️ 签到记录为空或格式异常，跳过详细统计")
+                # 使用默认值
+                change = 0
+                balance = 0
+                checkin_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                checkin_date = datetime.datetime.now().date()
+                consecutive_days = 0
+            else:
+                # 检查必要字段是否存在
+                first_record = checkin_list[0]
+                required_fields = ['change', 'balance', 'time']
+                missing_fields = [f for f in required_fields if f not in first_record]
+                
+                if missing_fields:
+                    print(f"⚠️ 签到记录缺少字段: {missing_fields}，跳过详细统计")
+                    change = 0
+                    balance = 0
+                    checkin_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    checkin_date = datetime.datetime.now().date()
+                    consecutive_days = 0
+                else:
+                    df_checkin = pd.DataFrame(checkin_list)
+                    df_checkin['change'] = df_checkin['change'].astype('float')
+                    df_checkin['checkin_date'] = df_checkin['time'].apply(lambda x: datetime.datetime.fromtimestamp(x/1000).date())
+                    df_checkin['checkin_time'] = df_checkin['time'].apply(lambda x: datetime.datetime.fromtimestamp(x/1000).strftime('%Y-%m-%d %H:%M:%S'))
+                    
+                    # 过滤出积分增加和签到记录，排除积分扣除记录
+                    valid_checkin = df_checkin[df_checkin['change'] >= 0]
+                    
+                    # 本日积分变动
+                    change = df_checkin['change'].iloc[0]
+                    
+                    # 当前剩余积分
+                    balance = int(float(df_checkin['balance'].iloc[0]))
+                    
+                    # 执行签到的时间
+                    checkin_time = df_checkin['checkin_time'].iloc[0]
+                    
+                    # 最近签到日期
+                    checkin_date = df_checkin['checkin_date'].iloc[0]
+                    
+                    # 计算连续天数
+                    consecutive_days = calculate_consecutive_days(valid_checkin)
             
             
             
