@@ -60,10 +60,10 @@ def start():
     sendContent = ""
 
 
-    url= "https://glados.space/api/user/checkin"
-    url2= "https://glados.space/api/user/status"
-    referer = 'https://glados.space/console/checkin'
-    origin = "https://glados.space"
+    url= "https://glados.cloud/api/user/checkin"
+    url2= "https://glados.cloud/api/user/status"
+    referer = 'https://glados.cloud/console/checkin'
+    origin = "https://glados.cloud"
     useragent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.0.0 Safari/537.36"
     payload={
         'token': 'glados.cloud'
@@ -284,4 +284,5 @@ def main_handler(event, context):
 
 if __name__ == '__main__':
     start()
+
         
