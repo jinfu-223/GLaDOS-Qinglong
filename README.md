@@ -18,7 +18,7 @@ pip install requests pandas python-dotenv
 
 ## 青龙面板部署
 
-1. **自动添加**：订阅管理中创建订阅，复制仓库链接 https://github.com/dff652/GLaDOS-Qinglong.git  
+1. **自动添加**：订阅管理中创建订阅，复制仓库链接 https://github.com/jinfu-223/GLaDOS-Qinglong.git  
    **手动添加**：下载脚本文件 `glados_sign_in.py`，在青龙面板的脚本管理中添加脚本
 2. **设置环境变量**：
    - `GLADOS_COOKIE`（必要）：多个账号使用 `&` 隔开，示例：`cookie1;&cookie2`，每个 cookie 结尾后要加上 `;`
